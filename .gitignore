@@ -1,0 +1,16 @@
+Library/*
+Temp/*
+Obj/*
+Build/*
+Builds/*
+Logs/*
+MemoryCaptures/*
+UserSettings/*
+
+# Asset store tools
+Assets/AssetStoreTools*
+
+# Package manager cache
+Assets/Packages/*
+Packages/manifest.json
+Packages/packages-lock.json
