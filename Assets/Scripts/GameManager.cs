@@ -2,8 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CharacterSpawner : MonoBehaviour
+public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance { get; private set; } // シングルトンは必ず一つしか生成されないゲームコントローラーと相性が良い
+
     public GameObject characterPrefab; // 生成するキャラクターのプレハブ
     public GameObject ballPrefab;
     
@@ -34,9 +36,19 @@ public class CharacterSpawner : MonoBehaviour
 
     private GameObject[] fieldPrefabs;
     public GameObject goalPrefab;
+
+    public int score = 0;
+    public int enemyScore = 0;
     
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(this.gameObject);
+            return;
+        }
+        Instance = this;
+
         fieldPrefabs = Resources.LoadAll<GameObject>("Fields");
     }
 
@@ -195,4 +207,21 @@ public class CharacterSpawner : MonoBehaviour
         }
     }
 
+    public void AddScore(int teamID, int point)
+    {
+        if(teamID == 0)
+        {
+            score += point;
+        }
+        else 
+        {
+            enemyScore += point;
+        }
+    }
+
+    public void ResetScore()
+    {
+        score = 0;
+        enemyScore = 0;
+    }
 }
