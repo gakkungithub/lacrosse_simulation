@@ -9,5 +9,11 @@ public class Goal : MonoBehaviour
         teamID = id;
     }
 
-    
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Ball"))
+        {
+            GameManager.Instance.AddScore(teamID, 1);
+        }
+    }
 }

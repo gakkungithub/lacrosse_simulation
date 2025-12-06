@@ -118,7 +118,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8770932208459181592}
   - component: {fileID: -4545090632704847074}
-  - component: {fileID: -6922152916356771586}
+  - component: {fileID: -9184297450090062092}
   m_Layer: 7
   m_Name: Goal
   m_TagString: Untagged
@@ -158,8 +158,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   teamID: 0
---- !u!64 &-6922152916356771586
-MeshCollider:
+--- !u!65 &-9184297450090062092
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -176,10 +176,9 @@ MeshCollider:
   m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 3
+  m_Size: {x: 4.5, y: 5.8, z: 1.5}
+  m_Center: {x: 0, y: 0, z: 0.1}
 --- !u!1 &6459605834749752857
 GameObject:
   m_ObjectHideFlags: 0

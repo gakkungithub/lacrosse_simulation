@@ -817,6 +817,7 @@ MonoBehaviour:
   goalPrefab: {fileID: 3615366467919284169, guid: 969e36f7554dd4e42871e72a0723f66d, type: 3}
   score: 0
   enemyScore: 0
+  scoreText: {fileID: 174718380}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

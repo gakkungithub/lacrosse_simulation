@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -39,6 +40,7 @@ public class GameManager : MonoBehaviour
 
     public int score = 0;
     public int enemyScore = 0;
+    [SerializeField] private TextMeshProUGUI scoreText;
     
     void Awake()
     {
@@ -82,6 +84,8 @@ public class GameManager : MonoBehaviour
         playerHeight = characterPrefab.GetComponent<Collider>().bounds.extents.y;
 
         SpawnCharacter();
+
+        scoreText.text = "0 - 0";
     }
 
     void Update()
@@ -169,18 +173,35 @@ public class GameManager : MonoBehaviour
         );
 
         frontGoal = Instantiate(goalPrefab, frontGoalPos, Quaternion.identity);
+        frontGoal.GetComponent<Goal>().setTeamID(0);
         backGoal = Instantiate(goalPrefab, backGoalPos, Quaternion.Euler(0, 180, 0));
+        frontGoal.GetComponent<Goal>().setTeamID(1);
 
-        drawCrease(frontGoal.transform);
-        drawCrease(backGoal.transform);
+        DrawCrease(frontGoal.transform);
+        DrawCrease(backGoal.transform);
+        DrawOutline();
+        DrawHalfLine(); 
     }
 
-    void drawCrease(Transform goalTransform)
+    private (GameObject obj, LineRenderer lr) CreateLine(string name, Transform parentTransform, float width = 0.2f)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parentTransform);
+
+        var lr = obj.AddComponent<LineRenderer>();
+        lr.useWorldSpace = false;
+        lr.startWidth = lr.endWidth = width;
+        lr.material = new Material(Shader.Find("Sprites/Default"));
+        lr.positionCount = 0;
+
+        return (obj, lr);
+    }
+
+    void DrawCrease(Transform goalTransform)
     {
         float bottomY = goalTransform.Find("LeftBar").GetComponent<Collider>().bounds.min.y;
 
-        GameObject circleObj = new GameObject("Crease");
-        circleObj.transform.SetParent(goalTransform);
+        (GameObject circleObj, LineRenderer lr) = CreateLine("Crease", goalTransform);
 
         Vector3 worldPos = new Vector3(
             goalTransform.position.x,
@@ -190,13 +211,7 @@ public class GameManager : MonoBehaviour
 
         circleObj.transform.localPosition = goalTransform.InverseTransformPoint(worldPos);
 
-        LineRenderer lr = circleObj.AddComponent<LineRenderer>();
-        lr.useWorldSpace = false;
-        lr.material = new Material(Shader.Find("Sprites/Default"));
-        lr.startColor = lr.endColor = Color.white;
-        lr.startWidth = lr.endWidth = creaseLineWidth;
         lr.positionCount = creaseSegments + 1;
-
         for (int i = 0; i <= creaseSegments; i++)
         {
             float angle = 2 * Mathf.PI * i / creaseSegments;
@@ -207,9 +222,49 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void DrawOutline()
+    {
+        (GameObject obj, LineRenderer lr) = CreateLine("Outline", field.transform);
+
+        BoxCollider box = field.GetComponent<BoxCollider>();
+        Vector3 size = Vector3.Scale(box.size, box.transform.lossyScale);
+        float w = size.x / 3;
+        float h = size.z / 3;
+
+        Vector3[] p =
+        {
+            new Vector3(-w, 0, -h),
+            new Vector3(-w, 0, h),
+            new Vector3( w, 0, h),
+            new Vector3( w, 0, -h),
+            new Vector3(-w, 0, -h)
+        };
+
+        lr.positionCount = p.Length;
+        lr.SetPositions(p);
+    }
+
+    private void DrawHalfLine()
+    {
+        (GameObject obj, LineRenderer lr) = CreateLine("HalfLine", field.transform);
+
+        BoxCollider box = field.GetComponent<BoxCollider>();
+        Vector3 size = Vector3.Scale(box.size, box.transform.lossyScale);
+        float w = size.x / 3;
+
+        Vector3[] p =
+        {
+            new Vector3(w, 0, 0),
+            new Vector3(-w, 0, 0),
+        };
+
+        lr.positionCount = p.Length;
+        lr.SetPositions(p);
+    }
+
     public void AddScore(int teamID, int point)
     {
-        if(teamID == 0)
+        if (teamID == 0)
         {
             score += point;
         }
@@ -217,11 +272,14 @@ public class GameManager : MonoBehaviour
         {
             enemyScore += point;
         }
+
+        scoreText.text = $"{score} - {enemyScore}";
     }
 
     public void ResetScore()
     {
         score = 0;
         enemyScore = 0;
+        scoreText.text = "0 - 0";
     }
 }
