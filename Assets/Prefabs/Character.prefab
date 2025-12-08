@@ -83,12 +83,12 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 2, y: 5.1, z: 2.1}
+  m_Center: {x: 0, y: -1.5, z: 0}
 --- !u!114 &8933061668239843411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -119,6 +119,8 @@ MonoBehaviour:
     m_Bits: 128
   swingAmplitude: 1
   swingFrequency: 1
+  isGrounded: 0
+  fieldArea: 0
   currentHand: 0
 --- !u!95 &8680993790451596627
 Animator:

@@ -5,15 +5,26 @@ using TMPro;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; } // シングルトンは必ず一つしか生成されないゲームコントローラーと相性が良い
+    public static GameManager Instance { get; private set; } // シングルトンは必ず一つしか生成されないゲームマネージャーと相性が良い
+
+    public enum FieldArea
+    {
+        Outside,
+        FrontArea,
+        BackArea,
+        FrontCrease,
+        BackCrease,
+    }
 
     public GameObject characterPrefab; // 生成するキャラクターのプレハブ
     public GameObject ballPrefab;
     
     private GameObject field;        // フィールドオブジェクト
+    private (float x, float z) fieldEdge;
+    public PhysicsMaterial outerWallMaterial;
     private GameObject frontGoal;        // 手前のゴールオブジェクト
     private GameObject backGoal;        // 奥のゴールオブジェクト
-
+    
     public float creaseRadius = 10.0f;
     public int creaseSegments = 50;
     public float creaseLineWidth = 0.05f;
@@ -31,6 +42,9 @@ public class GameManager : MonoBehaviour
     private Vector3 fieldMax;        // ステージの右上(x,z)
 
     private List<GameObject> characterObjList = new List<GameObject>();
+    private GameObject ballObj;
+    private Vector3 ballPositionOut;
+
     private int playerIndex = 0;
 
     public GameObject mainCamera;
@@ -90,6 +104,7 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
+        CheckFieldArea();
         if (Input.GetKeyDown(KeyCode.R))
         {
             SwitchCharacter();
@@ -131,7 +146,7 @@ public class GameManager : MonoBehaviour
                                     + Vector3.up * 1.2f; // 手元の高さに調整
 
                     // ボールを生成
-                    GameObject ballObj = Instantiate(ballPrefab, ballPos, Quaternion.identity);
+                    ballObj = Instantiate(ballPrefab, ballPos, Quaternion.identity);
                 }
                 spawned++;
             }
@@ -139,6 +154,8 @@ public class GameManager : MonoBehaviour
 
         if (spawned < spawnCount)
             Debug.LogWarning("指定数を生成できませんでした。ステージが狭すぎるか、キャラクターサイズが大きい可能性があります。");
+
+        CheckFieldArea();
     }
 
     void SwitchCharacter()
@@ -159,6 +176,7 @@ public class GameManager : MonoBehaviour
         Bounds fieldBounds = field.GetComponent<MeshRenderer>().bounds;
         BoxCollider goalBoxCollider = goalPrefab.transform.Find("LeftBar").GetComponent<BoxCollider>();
         Vector3 goalSize = Vector3.Scale(goalBoxCollider.size, goalBoxCollider.transform.lossyScale);
+        CreateWalls(0.5f, 5f);
 
         Vector3 frontGoalPos = new Vector3(
             fieldBounds.center.x,
@@ -178,9 +196,74 @@ public class GameManager : MonoBehaviour
         frontGoal.GetComponent<Goal>().setTeamID(1);
 
         DrawCrease(frontGoal.transform);
+
         DrawCrease(backGoal.transform);
         DrawOutline();
         DrawHalfLine(); 
+    }
+
+    void CreateWalls(float wallThickness, float wallHeight)
+    {
+        Bounds bounds = field.GetComponent<MeshRenderer>().bounds;
+
+        Vector3 center = bounds.center;
+        Vector3 size = bounds.size;
+
+        // 横幅と奥行き（地面の大きさ）
+        float width = size.x;
+        float depth = size.z;
+
+        // 壁プレハブを作らない場合はCubeから生成
+        GameObject wallPrefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        wallPrefab.GetComponent<MeshRenderer>().enabled = false; // ★透明にする
+
+        // ---- 左壁 ----
+        GameObject leftWall = Instantiate(wallPrefab);
+        leftWall.transform.position = new Vector3(
+            center.x - width / 2 - wallThickness / 2,
+            center.y + wallHeight / 2,
+            center.z
+        );
+        leftWall.transform.localScale = new Vector3(
+            wallThickness, wallHeight, depth
+        );
+        leftWall.GetComponent<BoxCollider>().material = outerWallMaterial;
+
+        // ---- 右壁 ----
+        GameObject rightWall = Instantiate(wallPrefab);
+        rightWall.transform.position = new Vector3(
+            center.x + width / 2 + wallThickness / 2,
+            center.y + wallHeight / 2,
+            center.z
+        );
+        rightWall.transform.localScale = new Vector3(
+            wallThickness, wallHeight, depth
+        );
+        rightWall.GetComponent<BoxCollider>().material = outerWallMaterial;
+
+        // ---- 前壁 ----
+        GameObject frontWall = Instantiate(wallPrefab);
+        frontWall.transform.position = new Vector3(
+            center.x,
+            center.y + wallHeight / 2,
+            center.z + depth / 2 + wallThickness / 2
+        );
+        frontWall.transform.localScale = new Vector3(
+            width, wallHeight, wallThickness
+        );
+        frontWall.GetComponent<BoxCollider>().material = outerWallMaterial;
+
+        // ---- 後壁 ----
+        GameObject backWall = Instantiate(wallPrefab);
+        backWall.transform.position = new Vector3(
+            center.x,
+            center.y + wallHeight / 2,
+            center.z - depth / 2 - wallThickness / 2
+        );
+        backWall.transform.localScale = new Vector3(
+            width, wallHeight, wallThickness
+        );
+        backWall.GetComponent<BoxCollider>().material = outerWallMaterial;
     }
 
     private (GameObject obj, LineRenderer lr) CreateLine(string name, Transform parentTransform, float width = 0.2f)
@@ -231,6 +314,8 @@ public class GameManager : MonoBehaviour
         float w = size.x / 3;
         float h = size.z / 3;
 
+        fieldEdge = (w, h);
+
         Vector3[] p =
         {
             new Vector3(-w, 0, -h),
@@ -260,6 +345,76 @@ public class GameManager : MonoBehaviour
 
         lr.positionCount = p.Length;
         lr.SetPositions(p);
+    }
+
+    private void CheckFieldArea()
+    {
+        foreach (GameObject characterObj in characterObjList)
+        {
+            Character character = characterObj.GetComponent<Character>();
+            if (character.isGrounded == false)
+                continue;
+
+            if (isInCrease(frontGoal.transform.position, characterObj.transform.position))
+            {
+                character.fieldArea = FieldArea.FrontCrease;
+            }
+            else if (isInCrease(backGoal.transform.position, characterObj.transform.position))
+            {
+                character.fieldArea = FieldArea.BackCrease;
+            }
+            else
+            {
+                character.fieldArea = isInsideOfLine(characterObj.transform.position);
+            }
+        }
+
+        if (ballObj.transform.parent == null)
+            return;
+
+        Ball ball = ballObj.GetComponent<Ball>();
+        if (isInCrease(frontGoal.transform.position, ballObj.transform.position))
+        {
+            ball.fieldArea = FieldArea.FrontCrease;
+        }
+        else if (isInCrease(backGoal.transform.position, ballObj.transform.position))
+        {
+            ball.fieldArea = FieldArea.BackCrease;
+        }
+        else
+        {
+            FieldArea previousBallFieldArea = ball.fieldArea;
+            ball.fieldArea = isInsideOfLine(ballObj.transform.position);
+            if (ball.fieldArea == FieldArea.Outside && ball.fieldArea != previousBallFieldArea)
+            {
+                
+            }
+        }
+        
+    }
+
+    private bool isInCrease(Vector3 creasePosition, Vector3 objPosition)
+    {
+        float dx = objPosition.x - creasePosition.x;
+        float dz = objPosition.z - creasePosition.z;
+        return dx * dx + dz * dz < creaseRadius * creaseRadius;
+    }
+
+    private FieldArea isInsideOfLine(Vector3 objPosition)
+    {
+        if (-fieldEdge.x < objPosition.x && objPosition.x < fieldEdge.x)
+        {
+            if (-fieldEdge.z < objPosition.z && objPosition.z < 0)
+            {
+                return FieldArea.FrontArea;
+            }
+            else if (0 < objPosition.z && objPosition.z < fieldEdge.z)
+            {
+                return FieldArea.BackArea;
+            }
+        }
+
+        return FieldArea.Outside;
     }
 
     public void AddScore(int teamID, int point)

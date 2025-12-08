@@ -807,6 +807,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   characterPrefab: {fileID: 788786003845736293, guid: ac62de106b7e342febc3bd7970c18d17, type: 3}
   ballPrefab: {fileID: 9214823458368168783, guid: 9f7e47b0f3cf74ccca4413c9b2e91376, type: 3}
+  outerWallMaterial: {fileID: 13400000, guid: d378e4ae5c8604a38a07cb39218812bb, type: 2}
   creaseRadius: 10
   creaseSegments: 50
   creaseLineWidth: 0.05

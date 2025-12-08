@@ -23,6 +23,9 @@ public class Character : MonoBehaviour
     private Vector3 leftHandStartPos;
 
     private Rigidbody rb;
+    public bool isGrounded;
+
+    public GameManager.FieldArea fieldArea;
     private MeshRenderer[] childRenderers;      // 子オブジェクトの Renderer 配列
 
     public enum HandType {
@@ -78,24 +81,16 @@ public class Character : MonoBehaviour
         // 回転
         transform.Rotate(0, h * rotateSpeed * Time.deltaTime, 0);
 
-        // ---- 移動（力 or 速度ベース） ----
+        // 移動
         Vector3 forwardMove = transform.forward * v;
         Vector3 horizontalVelocity = forwardMove * moveSpeed;
         horizontalVelocity.y = rb.linearVelocity.y; // 落下速度を残す
         rb.linearVelocity = horizontalVelocity;
 
-        bool isGrounded = Physics.SphereCast(
-            transform.position,
-            3.0f,
-            Vector3.down * 4.0f,
-            out RaycastHit hit,
-            4.0f,
-            groundLayer
-        );
-
         // ---- ジャンプ ----
         if (Input.GetKeyDown(KeyCode.J) && isGrounded)
         {
+            isGrounded = false;
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z); // 初速リセット
             rb.AddForce(Vector3.up * jumpPower, ForceMode.VelocityChange);
             charaAnim.SetTrigger("Jump");
@@ -202,5 +197,11 @@ public class Character : MonoBehaviour
         currentHand = nextHand;
     }
 
-
+    void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Ground"))
+        {
+            isGrounded = true;
+        } 
+    }
 }
