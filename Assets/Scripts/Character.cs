@@ -116,6 +116,9 @@ public class Character : MonoBehaviour
             } else {
                 leftHandAnim.SetTrigger("LeftThrow");
             }
+            Ball ball = heldBall.GetComponent<Ball>();
+            ball.fieldArea = fieldArea;
+            ball.isGrounded = false;
             heldBall.transform.SetParent(null);
             // 物理を再び有効化
             Rigidbody rb_ball = heldBall.GetComponent<Rigidbody>();

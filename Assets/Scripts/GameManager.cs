@@ -196,7 +196,6 @@ public class GameManager : MonoBehaviour
         frontGoal.GetComponent<Goal>().setTeamID(1);
 
         DrawCrease(frontGoal.transform);
-
         DrawCrease(backGoal.transform);
         DrawOutline();
         DrawHalfLine(); 
@@ -357,22 +356,42 @@ public class GameManager : MonoBehaviour
 
             if (isInCrease(frontGoal.transform.position, characterObj.transform.position))
             {
+                if (character.fieldArea != FieldArea.FrontCrease && character.heldBall != null)
+                {
+                    frontGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color = Color.red;
+                }
                 character.fieldArea = FieldArea.FrontCrease;
             }
             else if (isInCrease(backGoal.transform.position, characterObj.transform.position))
             {
+                if (character.fieldArea != FieldArea.BackCrease && character.heldBall != null)
+                {
+                    backGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color = Color.red;
+                }
                 character.fieldArea = FieldArea.BackCrease;
             }
             else
             {
-                character.fieldArea = isInsideOfLine(characterObj.transform.position);
+                FieldArea crntFieldArea = isInsideOfLine(characterObj.transform.position);
+                if (character.heldBall != null)
+                {
+                    if (character.fieldArea == FieldArea.FrontCrease && crntFieldArea == FieldArea.FrontArea)
+                    {
+                        frontGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color = Color.white;
+                    }
+                    else if (character.fieldArea == FieldArea.BackCrease && crntFieldArea == FieldArea.BackArea)
+                    {
+                        backGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color = Color.white;
+                    }
+                }
+                character.fieldArea = crntFieldArea;
             }
         }
 
-        if (ballObj.transform.parent == null)
+        Ball ball = ballObj.GetComponent<Ball>();
+        if (ball.isGrounded == false)
             return;
 
-        Ball ball = ballObj.GetComponent<Ball>();
         if (isInCrease(frontGoal.transform.position, ballObj.transform.position))
         {
             ball.fieldArea = FieldArea.FrontCrease;
@@ -385,6 +404,20 @@ public class GameManager : MonoBehaviour
         {
             FieldArea previousBallFieldArea = ball.fieldArea;
             ball.fieldArea = isInsideOfLine(ballObj.transform.position);
+
+            if (ballObj.transform.parent == null)
+            {
+                if (ball.fieldArea == FieldArea.FrontArea)
+                {
+                    frontGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color = Color.white;
+                }
+                else if (ball.fieldArea == FieldArea.BackArea)
+                {
+                    backGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color = Color.white;
+                }
+            }
+
+
             if (ball.fieldArea == FieldArea.Outside && ball.fieldArea != previousBallFieldArea)
             {
                 
@@ -419,6 +452,12 @@ public class GameManager : MonoBehaviour
 
     public void AddScore(int teamID, int point)
     {
+        if (frontGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color != Color.white ||
+            backGoal.transform.Find("Crease").GetComponent<LineRenderer>().material.color != Color.white)
+        {
+            return;
+        }
+
         if (teamID == 0)
         {
             score += point;
